@@ -151,4 +151,171 @@ void Ampl_calc(Operating_Calcs_Params_T *p, float during_signal)
 	if (tmp_during_signal < 10.0F) p->Fixed_level = 0;
 }
 */
+
+// Calculation of maximum delta time and configuration of timer for digitization signals
+void BD_ADC_PWM_Set_timer(PWM_CHx_Params_T *pwm_ch_x, TIMx_PWM_Params_T *pwm_timer, TIMx_Params_T *int_timer)
+{
+	uint32_t tmp_CCR_0,
+					 tmp_CCR_1,
+					 tmp_CCR_2,
+
+					 delta_0, 
+					 delta_1,
+					 delta_2,
+					 delta_3,
+
+					 Period;
+
+	/*
+	if (pwm_ch_x[0].CCR_x < pwm_ch_x[1].CCR_x && pwm_ch_x[0].CCR_x < pwm_ch_x[2].CCR_x)
+	{
+		tmp_CCR_0 = pwm_ch_x[0].CCR_x;
+		if (pwm_ch_x[1].CCR_x < pwm_ch_x[2].CCR_x)
+		{
+			tmp_CCR_1 = pwm_ch_x[1].CCR_x;
+			tmp_CCR_2 = pwm_ch_x[2].CCR_x;
+		}
+		else
+		{
+			tmp_CCR_1 = pwm_ch_x[2].CCR_x;
+			tmp_CCR_2 = pwm_ch_x[1].CCR_x;
+		}
+	}
+	else if (pwm_ch_x[1].CCR_x < pwm_ch_x[0].CCR_x && pwm_ch_x[1].CCR_x < pwm_ch_x[2].CCR_x)
+	{
+		tmp_CCR_0 = pwm_ch_x[1].CCR_x;
+		if (pwm_ch_x[0].CCR_x < pwm_ch_x[2].CCR_x)
+		{
+			tmp_CCR_1 = pwm_ch_x[0].CCR_x;
+			tmp_CCR_2 = pwm_ch_x[2].CCR_x;
+		}
+		else
+		{
+			tmp_CCR_1 = pwm_ch_x[2].CCR_x;
+			tmp_CCR_2 = pwm_ch_x[0].CCR_x;
+		}
+	}
+	else if (pwm_ch_x[2].CCR_x < pwm_ch_x[0].CCR_x && pwm_ch_x[2].CCR_x < pwm_ch_x[1].CCR_x)
+	{
+		tmp_CCR_0 = pwm_ch_x[2].CCR_x;
+		if (pwm_ch_x[0].CCR_x < pwm_ch_x[1].CCR_x)
+		{
+			tmp_CCR_1 = pwm_ch_x[0].CCR_x;
+			tmp_CCR_2 = pwm_ch_x[1].CCR_x;
+		}
+		else
+		{
+			tmp_CCR_1 = pwm_ch_x[1].CCR_x;
+			tmp_CCR_2 = pwm_ch_x[0].CCR_x;			
+		}
+	}
+	*/
+	
+	if (pwm_ch_x[0].CCR_x >= pwm_ch_x[1].CCR_x)
+	{
+		if (pwm_ch_x[0].CCR_x >= pwm_ch_x[2].CCR_x)
+		{
+			if (pwm_ch_x[1].CCR_x >= pwm_ch_x[2].CCR_x)
+			{
+				tmp_CCR_0 = pwm_ch_x[0].CCR_x;
+				tmp_CCR_1 = pwm_ch_x[1].CCR_x;
+				tmp_CCR_2 = pwm_ch_x[2].CCR_x;
+			}
+			else
+			{
+				tmp_CCR_0 = pwm_ch_x[0].CCR_x;
+				tmp_CCR_1 = pwm_ch_x[2].CCR_x;
+				tmp_CCR_2 = pwm_ch_x[1].CCR_x;		
+			}
+		}
+		else
+		{
+			tmp_CCR_0 = pwm_ch_x[2].CCR_x;
+			tmp_CCR_1 = pwm_ch_x[0].CCR_x;
+			tmp_CCR_2 = pwm_ch_x[1].CCR_x;
+		}
+	}
+	else
+	{
+		if (pwm_ch_x[1].CCR_x >= pwm_ch_x[2].CCR_x)
+		{
+			if (pwm_ch_x[0].CCR_x >= pwm_ch_x[2].CCR_x)
+			{
+				tmp_CCR_0 = pwm_ch_x[1].CCR_x;
+				tmp_CCR_1 = pwm_ch_x[0].CCR_x;
+				tmp_CCR_2 = pwm_ch_x[2].CCR_x;
+			}
+			else
+			{
+				tmp_CCR_0 = pwm_ch_x[1].CCR_x;
+				tmp_CCR_1 = pwm_ch_x[2].CCR_x;
+				tmp_CCR_2 = pwm_ch_x[0].CCR_x;				
+			}
+		}
+		else
+		{
+			tmp_CCR_0 = pwm_ch_x[2].CCR_x;
+			tmp_CCR_1 = pwm_ch_x[1].CCR_x;
+			tmp_CCR_2 = pwm_ch_x[0].CCR_x;
+		}		
+	}
+	
+	
+	delta_0 = tmp_CCR_0;
+	delta_1 = tmp_CCR_1 - tmp_CCR_0;
+	delta_2 = tmp_CCR_2 - tmp_CCR_1;
+	delta_3 = (pwm_timer->TIMx_Reg_Params_prev.Period-1) - tmp_CCR_2;
+	
+	if (delta_0 > delta_1)
+	{
+		if (delta_0 > delta_2)
+		{
+			if (delta_0 > delta_3)
+			{
+				//Period = delta_0;
+			}
+			else
+			{
+				//3
+			}
+		}
+		else
+		{
+			if (delta_2 > delta_3)
+			{
+				//2
+			}
+			else
+			{
+				//3
+			}
+		}
+	}
+	else
+	{
+		if (delta_1 > delta_2)
+		{
+			if (delta_1 > delta_3)
+			{
+				//1
+			}
+			else
+			{
+				//3
+			}
+		}
+		else
+		{
+			if (delta_2 > delta_3)
+			{
+				//2
+			}
+			else
+			{
+				//3
+			}
+		}
+	}
+}
+
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

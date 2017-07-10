@@ -7,6 +7,7 @@
 
 #include "BD_main_USER.h"
 #include "BD_general.h"
+#include "BD_tim.h"	 
 	 
 #define PLUS 1
 #define MINUS 0

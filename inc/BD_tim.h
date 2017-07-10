@@ -26,11 +26,19 @@
 
 typedef enum 
 {
-	FREQ_SET_INTERRUPT										= 0,
-	TIME_MEASURE_NOINTERRUPT							= 1,
-	DAC_SINUS															= 2,
-	PWM_MODE															= 3,	
-} TIMx_CONST_T;
+	UNUSED_SET														= 0,
+	FREQ_SET															= 1,		// Расчет частоты примерный по логарифмам
+	DAC_SINUS															= 2,		// Расчет точек для ЦАП	
+} TIMx_Params_Calc_Mode_T;
+
+typedef union{
+	uint8_t all;
+	struct {
+		uint8_t Int_Allowed:1;						// 0			Прерывание активно
+		uint8_t Hand_Calc_Params:1;				// 1			Ручной расчет параметров
+		uint8_t rsvd:6;										// 2-7		
+	} bit;
+} TIMx_Settings_T;
 
 #define	DIRECT_PWM_MODE										1
 #define	INVERSE_PWM_MODE									2
@@ -67,26 +75,27 @@ typedef struct
 typedef struct
 {
 	// Function inited (must be inited by special function ones):
-	bool									TIMx_init_was;	
-	bool									TIMx_en_was;
-	bool									TIMx_dis_was;
-	uint32_t							TIMx_function_break;
+	bool											TIMx_init_was;	
+	bool											TIMx_en_was;
+	bool											TIMx_dis_was;
+	uint32_t									TIMx_function_break;
 	
 	// Ones setting params (mustn`t be changed by developer aftet first initing):	
-	TIM_HandleTypeDef*		htim_x;																// Structer of TIMx	
-	void									(*TIMx_Init_func)(void);							// TIMx init function	
-	TIMx_CONST_T					TIMx_Mode;
-	uint32_t							APBx_Freq;
+	TIM_HandleTypeDef*				htim_x;																// Structer of TIMx	
+	void											(*TIMx_Init_func)(void);							// TIMx init function	
+	TIMx_Params_Calc_Mode_T		Calc_Mode;
+	TIMx_Settings_T						Settings;
+	uint32_t									APBx_Freq;
 	
 	// Changing params (must be inited, may be reinited by developer):
-	bool									TIMx_en;															//Allowes TIMx to be enabled	
-	TIMx_Reg_Params_T			TIMx_Reg_Params;
+	bool											TIMx_en;															//Allowes TIMx to be enabled	
+	TIMx_Reg_Params_T					TIMx_Reg_Params;
 
 	// Logic inited params (mustn`t be inited, reinited):
-	uint32_t							TIMx_dt;															// Microseconds
-	float									T_samp_FLOAT;													// Period float
-	fix16_t								T_samp_Q16;														// Period	Q16
-	TIMx_Reg_Params_T			TIMx_Reg_Params_prev;
+	uint32_t									TIMx_dt;															// Microseconds
+	float											T_samp_FLOAT;													// Period float
+	fix16_t										T_samp_Q16;														// Period	Q16
+	TIMx_Reg_Params_T					TIMx_Reg_Params_prev;
 } TIMx_Params_T;
 
 typedef struct
@@ -108,6 +117,8 @@ typedef struct
 	PWMx_Reg_Params_T			TIMx_Reg_Params;
 	// Logic inited params (mustn`t be inited, reinited):
 	PWMx_Reg_Params_T			TIMx_Reg_Params_prev;
+	float									T_samp_FLOAT;													// Period float
+	fix16_t								T_samp_Q16;														// Period	Q16	
 #ifdef PWM_SIN
 	uint16_t							Num_Points;
 	uint16_t							SIN_array[PWM_SIN_ARRAY];

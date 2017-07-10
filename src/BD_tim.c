@@ -22,12 +22,12 @@ void BD_PWM_ReInit(TIMx_PWM_Params_T *p)
 	HAL_TIM_Base_Init(p->htim_x);
 }
 
-void BD_TIM_Logical (TIMx_Params_T *p)
+void BD_TIM_Logical(TIMx_Params_T *p)
 {
 	if (!p->TIMx_init_was)
 	{
 		p->TIMx_Init_func();
-		if (p->TIMx_Mode == FREQ_SET_INTERRUPT || p->TIMx_Mode == DAC_SINUS)
+		if (!p->Settings.bit.Hand_Calc_Params)
 		{			
 			#ifdef DAC_SIN
 			if (p->TIMx_Mode == DAC_SINUS)
@@ -49,9 +49,9 @@ void BD_TIM_Logical (TIMx_Params_T *p)
 		BD_TIM_Init_Callback(p);
 		p->TIMx_init_was = true;
 	}
-	else if ( memcmp(&p->TIMx_Reg_Params, &p->TIMx_Reg_Params_prev, sizeof(p->TIMx_Reg_Params)) != 0 )
+	else if ( memcmp(&p->TIMx_Reg_Params, &p->TIMx_Reg_Params_prev, sizeof(p->TIMx_Reg_Params)) )
 	{		
-		if (p->TIMx_Mode == FREQ_SET_INTERRUPT || p->TIMx_Mode == DAC_SINUS)
+		if (!p->Settings.bit.Hand_Calc_Params)
 		{
 			#ifdef DAC_SIN
 			if (p->TIMx_Mode == DAC_SINUS)
@@ -73,16 +73,16 @@ void BD_TIM_Logical (TIMx_Params_T *p)
 
 	if (p->TIMx_en && !p->TIMx_en_was)
 	{
-		if (p->TIMx_Mode == FREQ_SET_INTERRUPT || p->TIMx_Mode == DAC_SINUS) HAL_TIM_Base_Start_IT(p->htim_x);
-		else if (p->TIMx_Mode == TIME_MEASURE_NOINTERRUPT) HAL_TIM_Base_Start(p->htim_x);	
+		if (p->Settings.bit.Int_Allowed) HAL_TIM_Base_Start_IT(p->htim_x);
+		else HAL_TIM_Base_Start(p->htim_x);
 
 		p->TIMx_en_was = true;
 		p->TIMx_dis_was = false;
 	}
 	else if (!p->TIMx_en && !p->TIMx_dis_was)
 	{
-		if (p->TIMx_Mode == FREQ_SET_INTERRUPT || p->TIMx_Mode == DAC_SINUS) HAL_TIM_Base_Stop_IT(p->htim_x);
-		else if (p->TIMx_Mode == TIME_MEASURE_NOINTERRUPT) HAL_TIM_Base_Stop(p->htim_x);
+		if (p->Settings.bit.Int_Allowed) HAL_TIM_Base_Stop_IT(p->htim_x);
+		else HAL_TIM_Base_Stop(p->htim_x);
 		p->htim_x->Instance->CNT = 0UL;
 
 		p->TIMx_en_was = false;
@@ -97,6 +97,11 @@ void BD_TIM_Logical (TIMx_Params_T *p)
 __weak void BD_TIM_PWM_EN (void){}
 __weak void BD_TIM_PWM_DIS(void){}
 
+__weak void BD_TIMx_PWM_Init_Callback(TIMx_PWM_Params_T *p)
+{
+	UNUSED(p);
+}	
+	
 void BD_TIMx_PWM_Logical(TIMx_PWM_Params_T *p)
 {
 	if (!p->TIMx_init_was)
@@ -106,8 +111,12 @@ void BD_TIMx_PWM_Logical(TIMx_PWM_Params_T *p)
 		BD_PWM_ReInit(p);
 	#ifdef PWM_SIN	
 		BD_PWMx_SIN_Params_Calc(p);
-	#endif	
+	#endif
+		p->T_samp_FLOAT = 1.0F/p->TIMx_Reg_Params.Freq_PWM;
+		p->T_samp_Q16 = fix16_from_float(p->T_samp_FLOAT);
 		p->TIMx_Reg_Params_prev = p->TIMx_Reg_Params;
+		
+		BD_TIMx_PWM_Init_Callback(p);	
 		p->TIMx_init_was = true;
 	}
 	else if ( memcmp(&p->TIMx_Reg_Params, &p->TIMx_Reg_Params_prev, sizeof(p->TIMx_Reg_Params)) != 0)
@@ -117,6 +126,9 @@ void BD_TIMx_PWM_Logical(TIMx_PWM_Params_T *p)
 		{
 			BD_TIMx_PWM_Params_Calc (&p->TIMx_Reg_Params, p->APBx_Freq);
 			BD_PWM_ReInit(p);
+			
+			p->T_samp_FLOAT = 1.0F/p->TIMx_Reg_Params.Freq_PWM;
+			p->T_samp_Q16 = fix16_from_float(p->T_samp_FLOAT);
 		}
 	#ifdef PWM_SIN
 		BD_PWMx_SIN_Params_Calc(p);
